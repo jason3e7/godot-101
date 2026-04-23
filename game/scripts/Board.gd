@@ -8,6 +8,7 @@ var score: int = 0
 
 signal tile_spawned(row: int, col: int, value: int)
 signal score_changed(new_score: int)
+signal board_moved(moves: Array)   # Array of {fr,fc,tr,tc,secondary:bool}
 signal game_won()
 signal game_over()
 
@@ -20,13 +21,17 @@ func new_game() -> void:
 	_spawn_tile()
 
 func move(direction: int) -> bool:
+	var moves := _collect_moves_2d(direction)
+
 	var moved := false
 	match direction:
 		0: moved = _slide_up()
 		1: moved = _slide_right()
 		2: moved = _slide_down()
 		3: moved = _slide_left()
+
 	if moved:
+		board_moved.emit(moves)
 		_spawn_tile()
 		if _check_win():
 			game_won.emit()
@@ -45,6 +50,61 @@ func is_game_over() -> bool:
 
 func is_won() -> bool:
 	return _check_win()
+
+# ── Move tracking ─────────────────────────────────────────────────────────────
+
+func _compute_line_moves(line: Array) -> Array:
+	var nz: Array = []
+	for i in SIZE:
+		if line[i] != 0:
+			nz.append({val = line[i], src = i})
+
+	var result: Array = []
+	var write := 0
+	var i := 0
+	while i < nz.size():
+		if i + 1 < nz.size() and nz[i].val == nz[i + 1].val:
+			result.append({src = nz[i].src,     dst = write, secondary = false})
+			result.append({src = nz[i + 1].src, dst = write, secondary = true})
+			i += 2
+		else:
+			result.append({src = nz[i].src, dst = write, secondary = false})
+			i += 1
+		write += 1
+	return result
+
+func _collect_moves_2d(direction: int) -> Array:
+	var all_moves: Array = []
+	match direction:
+		0:  # up
+			for c in SIZE:
+				var col: Array = []
+				for r in SIZE:
+					col.append(grid[r][c])
+				for m in _compute_line_moves(col):
+					all_moves.append({fr = m.src, fc = c, tr = m.dst, tc = c, secondary = m.secondary})
+		1:  # right
+			for r in SIZE:
+				var row: Array = (grid[r] as Array).duplicate()
+				row.reverse()
+				for m in _compute_line_moves(row):
+					all_moves.append({fr = r, fc = SIZE - 1 - m.src, tr = r, tc = SIZE - 1 - m.dst, secondary = m.secondary})
+		2:  # down
+			for c in SIZE:
+				var col: Array = []
+				for r in SIZE:
+					col.append(grid[r][c])
+				col.reverse()
+				for m in _compute_line_moves(col):
+					all_moves.append({fr = SIZE - 1 - m.src, fc = c, tr = SIZE - 1 - m.dst, tc = c, secondary = m.secondary})
+		3:  # left
+			for r in SIZE:
+				var row: Array = (grid[r] as Array).duplicate()
+				for m in _compute_line_moves(row):
+					all_moves.append({fr = r, fc = m.src, tr = r, tc = m.dst, secondary = m.secondary})
+	return all_moves
+
+# ── Internal ──────────────────────────────────────────────────────────────────
 
 func _spawn_tile() -> void:
 	var empty: Array = []
