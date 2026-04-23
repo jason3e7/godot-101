@@ -14,6 +14,12 @@ cleanup() {
 trap cleanup EXIT
 
 ensure_xvfb() {
+    # If a real desktop display is already set, use it directly
+    if [ -n "$DISPLAY" ] && xdpyinfo -display "$DISPLAY" &>/dev/null 2>&1; then
+        echo "  Using existing display ($DISPLAY)"
+        return
+    fi
+    # Fall back to Xvfb on :99
     if xdpyinfo -display :99 &>/dev/null 2>&1; then
         export DISPLAY=:99
         echo "  Using existing Xvfb on :99"

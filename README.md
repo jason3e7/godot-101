@@ -51,7 +51,7 @@ Two stages:
 
 ### Watch tests run live (with a desktop)
 
-If you are logged into a desktop session (local or remote), run the test script directly in a terminal — it will detect the existing `$DISPLAY` and skip Xvfb:
+If you are logged into a desktop session (local or remote), run the test script directly — it detects the existing `$DISPLAY` and skips Xvfb:
 
 ```bash
 bash test.sh
@@ -64,6 +64,15 @@ godot-4 --path game/ --script "res://tests/TestBoard.gd"
 ```
 
 Godot opens a window, runs all 13 assertions, prints PASS/FAIL to the terminal, then exits with code `0` (all pass) or `1` (any fail).
+
+### AI Demo — watch the AI play
+
+Opens the game visually with an AI making random moves every 0.8 seconds.
+Each move is labelled on screen (direction + move count). The demo stops and shows a summary when the AI wins or gets stuck.
+
+```bash
+godot-4 --path game/ --main-scene "res://scenes/Demo.tscn"
+```
 
 ## Project structure
 
